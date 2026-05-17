@@ -1,0 +1,139 @@
+.chat-page {
+  display: flex;
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  background: var(--bg-base);
+  overflow: hidden;
+  position: relative;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  height: 100%;
+  position: relative;
+  background: var(--bg-surface);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+}
+
+.empty-icon {
+  font-size: 80px;
+  background: var(--primary-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: float 4s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px) scale(1); }
+  50% { transform: translateY(-15px) scale(1.05); }
+}
+
+.empty-state h2 {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0;
+  background: var(--primary-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.empty-state p {
+  font-size: 16px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.empty-decoration {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.dot-1 {
+  animation-delay: 0s;
+}
+
+.dot-2 {
+  animation-delay: 0.2s;
+}
+
+.dot-3 {
+  animation-delay: 0.4s;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.5);
+    box-shadow: 0 0 15px var(--primary-color);
+  }
+}
+
+.no-chat-selected {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-base);
+}
+
+@media (max-width: 768px) {
+  .chat-page {
+    flex-direction: row; /* Prevent vertical stack */
+  }
+
+  .chat-page .chat-list {
+    width: 100% !important;
+    display: flex !important;
+    border-right: none;
+  }
+
+  .chat-page .no-chat-selected {
+    display: none !important;
+  }
+
+  .chat-page .chat-window {
+    display: none !important;
+  }
+
+  /* When a chat is active, hide list and show window */
+  .chat-page.chat-active .chat-list {
+    display: none !important;
+  }
+
+  .chat-page.chat-active .chat-window {
+    display: flex !important;
+    width: 100% !important;
+  }
+
+  .empty-state h2 {
+    font-size: 24px;
+  }
+
+  .empty-state p {
+    font-size: 14px;
+  }
+
+  .empty-icon {
+    font-size: 64px;
+  }
+}

@@ -1,0 +1,223 @@
+.message-input {
+  padding: 16px;
+  background: var(--bg-surface);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-top: 1px solid var(--border-light);
+  box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.2);
+  z-index: 50;
+  position: relative;
+}
+
+.input-wrapper {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border-light);
+  border-radius: 28px;
+  padding: 8px;
+  transition: all 0.3s ease;
+}
+
+.input-wrapper:focus-within {
+  border-color: var(--primary-color);
+  background: rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.message-textarea {
+  flex: 1;
+  padding: 10px 14px;
+  border: none;
+  background: transparent;
+  font-size: 15px;
+  color: var(--text-primary);
+  font-family: inherit;
+  resize: none;
+  max-height: 120px;
+  outline: none;
+}
+
+.message-textarea::placeholder {
+  color: var(--text-muted);
+}
+
+.message-textarea::-webkit-scrollbar {
+  width: 4px;
+}
+.message-textarea::-webkit-scrollbar-thumb {
+  background: var(--border-light);
+  border-radius: 4px;
+}
+
+.input-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 20px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
+}
+
+.input-btn:hover:not(:disabled) {
+  background: var(--bg-glass);
+  color: var(--text-primary);
+  transform: scale(1.1);
+}
+
+.input-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.image-btn:hover:not(:disabled) {
+  color: #3b82f6;
+}
+
+.send-btn {
+  background: var(--primary-gradient);
+  color: white;
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+}
+
+.send-btn:hover:not(:disabled) {
+  transform: scale(1.1) rotate(-10deg);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+  color: white;
+}
+
+.voice-btn:hover:not(:disabled) {
+  color: #ec4899;
+}
+
+.voice-btn.recording {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  animation: recordingPulse 1.5s infinite;
+}
+
+@keyframes recordingPulse {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+  70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+/* Message Input Container (Wrapping both input and reply preview) */
+.message-input-container {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 50;
+  background: var(--bg-surface);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-top: 1px solid var(--border-light);
+  box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.2);
+}
+
+.message-input {
+  padding: 16px;
+  background: transparent;
+  z-index: 50;
+  position: relative;
+}
+
+/* Reply Preview Bar */
+.reply-preview-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: rgba(0, 0, 0, 0.2);
+  border-left: 4px solid var(--primary-color);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.reply-preview-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.reply-user {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--primary-color);
+  margin-bottom: 2px;
+}
+
+.reply-text {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.cancel-reply-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cancel-reply-btn:hover {
+  color: var(--danger-color);
+  transform: scale(1.2);
+}
+
+/* Recording Status */
+.recording-status {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 14px;
+  color: #ef4444;
+  font-weight: 600;
+  font-size: 14px;
+  animation: fadeIn 0.3s ease;
+}
+
+.recording-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ef4444;
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@media (max-width: 768px) {
+  .message-input {
+    padding: 12px;
+  }
+  
+  .input-wrapper {
+    gap: 8px;
+    padding: 6px;
+    border-radius: 24px;
+  }
+
+  .message-textarea {
+    font-size: 16px; /* prevent iOS zoom */
+  }
+
+  .input-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+  }
+}
