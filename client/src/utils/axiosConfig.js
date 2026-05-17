@@ -1,5 +1,9 @@
 import axios from 'axios';
 
+// Set production API base URL from env if provided, otherwise default to relative path for dev proxy
+const API_URL = process.env.REACT_APP_API_URL || '';
+axios.defaults.baseURL = API_URL;
+
 // Global response interceptor — catches 401 (expired/invalid token) across ALL requests
 axios.interceptors.response.use(
   (response) => response,

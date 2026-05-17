@@ -7,7 +7,8 @@ export const useSocketStore = create((set) => ({
   onlineUsers: new Set(),
 
   initializeSocket: (userId) => {
-    const socket = io('http://localhost:5000', {
+    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+    const socket = io(API_URL, {
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
