@@ -1,8 +1,66 @@
 import express from 'express';
 import Story from '../models/Story.js';
 import { auth } from '../middleware/auth.js';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const router = express.Router();
+
+// Initialize Gemini AI (Lazy)
+let genAI;
+let model;
+
+const getAiModel = () => {
+  if (!model) {
+    if (!process.env.GEMINI_API_KEY) return null;
+    genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const modelName = "gemini-2.5-flash";
+    console.log(`🤖 Story Analyzer Initializing with model: ${modelName}`);
+    model = genAI.getGenerativeModel({ model: modelName });
+  }
+  return model;
+};
+
+// Analyze and summarize active stories using Gemini
+router.get('/analyze', auth, async (req, res) => {
+  try {
+    const stories = await Story.find({
+      expiresAt: { $gt: new Date() }
+    }).populate('userId', 'username');
+
+    // Filter out user's own stories for the analysis
+    const friendsStories = stories.filter(s => s.userId._id.toString() !== req.user.id);
+
+    if (friendsStories.length === 0) {
+      return res.status(200).json({ summary: "Nobody has posted any new stories today." });
+    }
+
+    const aiModel = getAiModel();
+    if (!aiModel) {
+      // Fallback
+      const uniqueNames = [...new Set(friendsStories.map(s => s.userId.username))];
+      return res.status(200).json({ summary: `Nobody is online but the following people posted updates: ${uniqueNames.join(', ')}.` });
+    }
+
+    const formattedStories = friendsStories.map(s => `[User: ${s.userId.username}]: ${s.content || '(Image status)'}`).join('\n');
+
+    const prompt = `You are Kane, an AI status and story analyzer for a futuristic messaging app.
+The user wants you to give them a brief, intelligent summary of what their friends have posted on their stories/statuses today.
+Here are the active stories:
+${formattedStories}
+
+Synthesize these stories into a very friendly, natural, and conversational 1-2 sentence spoken summary.
+E.g.: "Ashwin posted that he's working late at the library, while Mallikarjun is sharing some weekend vibes!"
+Do not use markdown, formatting, or bullet points. Speak directly as Kane.`;
+
+    const result = await aiModel.generateContent(prompt);
+    const summary = result.response.text().trim();
+
+    res.status(200).json({ summary });
+  } catch (error) {
+    console.error('Story analysis error:', error);
+    res.status(500).json({ message: 'Failed to analyze stories.' });
+  }
+});
 
 // Create story
 router.post('/', auth, async (req, res) => {

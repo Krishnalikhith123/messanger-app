@@ -46,7 +46,9 @@ Supported Actions:
    Entities: "groupName" (string, default to "New Group" if not specified), "participantNames" (array of strings)
 3. "check_stories" - Checking stories/statuses.
 4. "catch_me_up" - Summarizing recent messages.
-5. "unknown" - If the command doesn't match above.
+5. "update_story" - Posting/updating a new text story/status update.
+   Entities: "content" (string, the story text to post)
+6. "unknown" - If the command doesn't match above.
 
 Rules:
 - If the user says "create a group with [names]", action is "create_group".
@@ -58,6 +60,9 @@ JSON: { "action": "create_group", "groupName": "New Group", "participantNames": 
 
 Example: "reply to mom I am coming home"
 JSON: { "action": "reply", "recipientName": "mom", "content": "I am coming home" }
+
+Example: "post a story saying chilling at home"
+JSON: { "action": "update_story", "content": "chilling at home" }
 
 User Command: "${transcript}"
 `;

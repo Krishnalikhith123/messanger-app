@@ -460,18 +460,31 @@ const AIAssistant = () => {
                 }
             }
             else if (intent.action === 'check_stories') {
-                toast.success(`Intent parsed: Check Stories`, { id: 'ai-intent' });
-                const storiesRes = await axios.get('/api/stories');
-                const stories = storiesRes.data;
-                
-                // Get unique users who posted stories
-                const uniqueUsers = [...new Set(stories.filter(s => s.userId._id !== user.id).map(s => s.userId.username))];
-                
-                if (uniqueUsers.length > 0) {
-                    let text = `The following people have posted new stories: ${uniqueUsers.join(', ')}.`;
-                    await speakText(text);
-                } else {
-                    await speakText("Nobody has posted any new stories today.");
+                toast.success(`Analyzing Stories...`, { id: 'ai-intent' });
+                try {
+                    const response = await axios.get('/api/stories/analyze');
+                    const summary = response.data.summary;
+                    await speakText(summary);
+                } catch (err) {
+                    console.error('Failed to analyze stories:', err);
+                    await speakText("I had trouble checking the stories right now. Please try again.");
+                }
+            }
+            else if (intent.action === 'update_story') {
+                if (!intent.content) {
+                    await speakText("What would you like your story to say?");
+                    return;
+                }
+                toast.success(`Posting story: "${intent.content}"`, { id: 'ai-intent' });
+                try {
+                    await axios.post('/api/stories', {
+                        content: intent.content,
+                        mediaType: 'text'
+                    });
+                    await speakText(`Successfully posted your story saying: ${intent.content}`);
+                } catch (err) {
+                    console.error('Failed to post story:', err);
+                    await speakText("I encountered an error trying to update your story.");
                 }
             }
             else if (intent.action === 'catch_me_up') {
