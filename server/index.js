@@ -12,7 +12,7 @@ import messageRoutes from './routes/messages.js';
 import userRoutes from './routes/users.js';
 import storyRoutes from './routes/stories.js';
 import { errorHandler } from './middleware/errorHandler.js';
-import { initSocket, setOnlineUsers, emitToUser } from './socket.js';
+import { initSocket, setOnlineUsers, emitToUser, getOnlineUsers } from './socket.js';
 import Event from './models/Event.js';
 import Chat from './models/Chat.js';
 
@@ -197,32 +197,51 @@ setInterval(async () => {
     // 1 hour from now
     const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000);
     
-    // Find active events where the event timestamp is:
-    // 1. Scheduled in the next hour (i.e. <= 1 hour from now)
-    // 2. Has not happened yet (i.e. > now)
-    // 3. Has not been reminded yet
-    const pendingReminders = await Event.find({
-      eventTimestamp: { $lte: oneHourFromNow, $gt: now },
-      reminded: false
+    // Find active events scheduled in the next hour
+    const activeEvents = await Event.find({
+      eventTimestamp: { $lte: oneHourFromNow, $gt: now }
     });
 
-    for (const event of pendingReminders) {
-      event.reminded = true;
-      await event.save();
+    const onlineUsersMap = getOnlineUsers();
 
+    for (const event of activeEvents) {
       // Find the chat participants to notify
       const chatDoc = await Chat.findById(event.chatId);
       if (chatDoc) {
-        console.log(`⏰ Broadcasting proactive 1-hour voice reminder for event: "${event.title}"`);
-        chatDoc.participants.forEach(pId => {
-          emitToUser(pId.toString(), 'event-reminder', {
-            _id: event._id,
-            title: event.title,
-            time: event.time,
-            location: event.location,
-            chatId: event.chatId
-          });
-        });
+        let eventUpdated = false;
+
+        for (const pId of chatDoc.participants) {
+          const userIdStr = pId.toString();
+
+          // If the user is currently online
+          if (onlineUsersMap.has(userIdStr)) {
+            // Check if this user has already been reminded
+            const hasBeenReminded = event.remindedUsers && event.remindedUsers.some(uId => uId.toString() === userIdStr);
+
+            if (!hasBeenReminded) {
+              console.log(`⏰ Broadcasting proactive 1-hour voice reminder for event "${event.title}" to user ${userIdStr}`);
+              
+              emitToUser(userIdStr, 'event-reminder', {
+                _id: event._id,
+                title: event.title,
+                time: event.time,
+                location: event.location,
+                chatId: event.chatId
+              });
+
+              // Add user to the reminded list
+              if (!event.remindedUsers) {
+                event.remindedUsers = [];
+              }
+              event.remindedUsers.push(pId);
+              eventUpdated = true;
+            }
+          }
+        }
+
+        if (eventUpdated) {
+          await event.save();
+        }
       }
     }
   } catch (err) {

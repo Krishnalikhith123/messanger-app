@@ -28,10 +28,10 @@ const eventSchema = new mongoose.Schema({
   eventTimestamp: {
     type: Date
   },
-  reminded: {
-    type: Boolean,
-    default: false
-  },
+  remindedUsers: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
   createdAt: {
     type: Date,
     default: Date.now
