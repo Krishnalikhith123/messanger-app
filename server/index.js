@@ -12,7 +12,9 @@ import messageRoutes from './routes/messages.js';
 import userRoutes from './routes/users.js';
 import storyRoutes from './routes/stories.js';
 import { errorHandler } from './middleware/errorHandler.js';
-import { initSocket, setOnlineUsers } from './socket.js';
+import { initSocket, setOnlineUsers, emitToUser } from './socket.js';
+import Event from './models/Event.js';
+import Chat from './models/Chat.js';
 
 const app = express();
 const httpServer = createServer(app);
@@ -187,5 +189,45 @@ httpServer.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📝 API URL: http://localhost:${PORT}`);
 });
+
+// Background Scheduler: Proactive 1-Hour AI Voice Reminder
+setInterval(async () => {
+  try {
+    const now = new Date();
+    // 1 hour from now
+    const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000);
+    
+    // Find active events where the event timestamp is:
+    // 1. Scheduled in the next hour (i.e. <= 1 hour from now)
+    // 2. Has not happened yet (i.e. > now)
+    // 3. Has not been reminded yet
+    const pendingReminders = await Event.find({
+      eventTimestamp: { $lte: oneHourFromNow, $gt: now },
+      reminded: false
+    });
+
+    for (const event of pendingReminders) {
+      event.reminded = true;
+      await event.save();
+
+      // Find the chat participants to notify
+      const chatDoc = await Chat.findById(event.chatId);
+      if (chatDoc) {
+        console.log(`⏰ Broadcasting proactive 1-hour voice reminder for event: "${event.title}"`);
+        chatDoc.participants.forEach(pId => {
+          emitToUser(pId.toString(), 'event-reminder', {
+            _id: event._id,
+            title: event.title,
+            time: event.time,
+            location: event.location,
+            chatId: event.chatId
+          });
+        });
+      }
+    }
+  } catch (err) {
+    console.error('Proactive reminder scheduler error:', err);
+  }
+}, 15000); // Check every 15 seconds for rapid testing responsiveness!
 
 export { app as default, io };

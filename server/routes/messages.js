@@ -307,7 +307,15 @@ Provide a helpful, direct, friendly, and concise response. Do not use markdown w
       if (timeKeywords.some(kw => content.toLowerCase().includes(kw))) {
         try {
           const eventPrompt = `Extract event details from this message if any exist: "${content}". 
-Return ONLY JSON format: { "isEvent": true/false, "title": "...", "date": "...", "time": "...", "location": "..." }. No markdown wrappers.`;
+Current local time is: ${new Date().toString()}.
+Return ONLY JSON format: { 
+  "isEvent": true/false, 
+  "title": "...", 
+  "date": "...", 
+  "time": "...", 
+  "location": "...",
+  "isoDateTime": "YYYY-MM-DDTHH:MM:SS.000Z" (Calculate this exact ISO string in UTC or standard local timezone, based on the current local time provided above)
+}. No markdown wrappers.`;
           
           const eventResult = await aiModel.generateContent(eventPrompt);
           let rawEvent = eventResult.response.text().trim();
@@ -332,6 +340,7 @@ Return ONLY JSON format: { "isEvent": true/false, "title": "...", "date": "...",
                date: eventData.date,
                time: eventData.time,
                location: eventData.location,
+               eventTimestamp: eventData.isoDateTime ? new Date(eventData.isoDateTime) : null,
                chatId,
                createdBy: req.user.id
              });

@@ -131,6 +131,31 @@ const AIAssistant = () => {
         };
     }, [socket, user]);
 
+    // 3. Listen for proactive event reminders
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleEventReminder = (event) => {
+            console.log('🎤 Event reminder received:', event);
+            const speakMsg = `Hey boss, don't forget that you have ${event.title} at ${event.time}. You just have one hour left.`;
+            
+            // Proactively speak out loud!
+            speakText(speakMsg);
+
+            // Trigger a high-visibility toast alert!
+            toast.error(`⏰ Reminder: ${event.title} is starting at ${event.time}! (1 hour left)`, {
+                duration: 10000,
+                icon: '⏰'
+            });
+        };
+
+        socket.on('event-reminder', handleEventReminder);
+
+        return () => {
+            socket.off('event-reminder', handleEventReminder);
+        };
+    }, [socket]);
+
     // Handle unmount to cancel speech
     const isMountedRef = useRef(true);
     useEffect(() => {
