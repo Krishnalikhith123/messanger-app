@@ -52,6 +52,20 @@ function ChatWindow({ chat }) {
   }, [chat._id]);
 
   useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const response = await axios.get(`/api/messages/${chat._id}/events`);
+        setExtractedEvents(response.data);
+      } catch (error) {
+        console.error('Error fetching chat events:', error);
+      }
+    };
+    if (chat?._id) {
+      fetchEvents();
+    }
+  }, [chat._id]);
+
+  useEffect(() => {
     if (!socket) return;
 
     const handleReceiveMessage = (data) => {
@@ -274,6 +288,19 @@ function ChatWindow({ chat }) {
         toast.error('Failed to remove member');
         console.error('Error removing member:', error);
       }
+    }
+  };
+
+  const handleDismissEvent = async (eventId, idx) => {
+    try {
+      if (eventId) {
+        await axios.delete(`/api/messages/events/${eventId}`);
+      }
+      setExtractedEvents(prev => prev.filter((_, i) => i !== idx));
+      toast.success('Event dismissed');
+    } catch (error) {
+      console.error('Error dismissing event:', error);
+      toast.error('Failed to dismiss event');
     }
   };
 
@@ -522,7 +549,7 @@ function ChatWindow({ chat }) {
                 <p className="event-card-title">{ev.title}</p>
                 <p className="event-card-details">{ev.date} · {ev.time} {ev.location ? `· 📍 ${ev.location}` : ''}</p>
               </div>
-              <button className="event-card-dismiss" onClick={() => setExtractedEvents(prev => prev.filter((_, i) => i !== idx))} title="Dismiss">✕</button>
+              <button className="event-card-dismiss" onClick={() => handleDismissEvent(ev._id, idx)} title="Dismiss">✕</button>
             </div>
           ))}
         </div>

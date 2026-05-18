@@ -248,19 +248,19 @@ router.post('/', auth, async (req, res) => {
       const chatDoc = await Chat.findById(chatId).populate('participants');
       if (!chatDoc) return;
 
-      // 1. @Kane Group Chat Co-Pilot
-      if (chatDoc.isGroupChat && content.includes('@Kane')) {
+      // 1. @Kane Chat Co-Pilot (Case-Insensitive, Direct & Group Chats)
+      if (content.toLowerCase().includes('@kane')) {
         try {
           // Fetch last 10 messages for context
           const recentMsgs = await Message.find({ chatId }).sort({ createdAt: -1 }).limit(10).populate('senderId', 'username');
-          const contextStr = recentMsgs.reverse().map(m => `[${m.senderId?.username}]: ${m.content}`).join('\n');
+          const contextStr = recentMsgs.reverse().map(m => `[${m.senderId?.username || 'User'}]: ${m.content}`).join('\n');
           
-          const prompt = `You are Kane, an AI participant in this group chat. 
-Recent Context:
+          const prompt = `You are Kane, a friendly and intelligent AI assistant in this chat. 
+Recent Chat History Context:
 ${contextStr}
 
 The user just sent: "${content}"
-Provide a helpful, friendly, and concise response. Do not use markdown wrappers.`;
+Provide a helpful, direct, friendly, and concise response. Do not use markdown wrappers.`;
 
           const result = await aiModel.generateContent(prompt);
           let botReply = result.response.text().trim();
@@ -272,9 +272,14 @@ Provide a helpful, friendly, and concise response. Do not use markdown wrappers.
             await botUser.save();
           }
 
+          const recipientId = chatDoc.isGroupChat 
+            ? undefined 
+            : chatDoc.participants.find(p => p._id.toString() !== req.user.id)?._id;
+
           const botMessage = new Message({
             chatId,
             senderId: botUser._id,
+            recipientId,
             content: botReply,
             messageType: 'text',
             isRead: false
@@ -289,7 +294,7 @@ Provide a helpful, friendly, and concise response. Do not use markdown wrappers.
           chatDoc.participants.forEach(p => {
             emitToUser(p._id, 'receive-message', { ...botMessage.toObject(), recipientId: p._id });
             if (p._id.toString() !== req.user.id) {
-               emitToUser(p._id, 'unread-notification', { senderId: botUser._id, senderName: 'Kane (AI)', message: 'Kane (AI) replied in the group.' });
+               emitToUser(p._id, 'unread-notification', { senderId: botUser._id, senderName: 'Kane (AI)', message: chatDoc.isGroupChat ? 'Kane (AI) replied in the group.' : 'Kane (AI) replied.' });
             }
           });
         } catch (e) {
@@ -306,9 +311,21 @@ Return ONLY JSON format: { "isEvent": true/false, "title": "...", "date": "...",
           
           const eventResult = await aiModel.generateContent(eventPrompt);
           let rawEvent = eventResult.response.text().trim();
-          if (rawEvent.startsWith('\`\`\`json')) rawEvent = rawEvent.replace(/^\`\`\`json\n/, '').replace(/\n\`\`\`$/, '');
           
-          const eventData = JSON.parse(rawEvent);
+          // Clean markdown code blocks robustly
+          rawEvent = rawEvent.replace(/```json/gi, '').replace(/```/g, '').trim();
+          
+          // Regex fallback if needed
+          let eventData = { isEvent: false };
+          try {
+            eventData = JSON.parse(rawEvent);
+          } catch (parseErr) {
+            const jsonMatch = rawEvent.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              eventData = JSON.parse(jsonMatch[0]);
+            }
+          }
+          
           if (eventData.isEvent) {
              const newEvent = new Event({
                title: eventData.title,
@@ -453,6 +470,26 @@ router.delete('/chat/:chatId/all', auth, async (req, res) => {
     );
 
     res.status(200).json({ message: 'All messages deleted' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Fetch all active events for a chat
+router.get('/:chatId/events', auth, async (req, res) => {
+  try {
+    const events = await Event.find({ chatId: req.params.chatId }).sort({ createdAt: 1 });
+    res.status(200).json(events);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Delete/Dismiss an event
+router.delete('/events/:eventId', auth, async (req, res) => {
+  try {
+    await Event.findByIdAndDelete(req.params.eventId);
+    res.status(200).json({ message: 'Event dismissed successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
